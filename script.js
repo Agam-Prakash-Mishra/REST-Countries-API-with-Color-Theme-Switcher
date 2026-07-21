@@ -1,5 +1,3 @@
-import data from "./data.js"
-
 let countries;
 
 
