@@ -1,32 +1,52 @@
+import data from "./data.js"
+
 let countries;
 
+
+//getting data from API
 function renderAllCountries(){
-    fetch("https://restcountries.com/v3.1/all?fields=name,population,region,capital,flags")
+    fetch('https://api.restcountries.com/countries/v5?limit=100&pretty=1',
+    { headers: { 'Authorization': 'Bearer rc_live_1e1dd4a0fed240078c7af9d5ed5cdf25' } }
+)
     .then( res=> res.json())
     .then( param_countries =>{
-        countries = param_countries
+        // console.log(param_countries);
+        countriesContainer.innerHTML="";
+        countries = param_countries.data.objects
+        console.log(countries)
         countries.forEach(renderCountryCard)
     })
     .catch(err => {
-        console.log("unable to fetch countries, Error is:",err)
-        document.querySelector(".countries-container").innerHTML = "<p><b>Unable to fetch data. Check your internet connection or restcountries.com took too long to respond</b></p>";
+        // console.log("unable to fetch countries, Error is:",err)
+        // document.querySelector(".countries-container").innerHTML = "<p><b>Unable to fetch data. Check your internet connection or restcountries.com, took too long to respond</b></p>";
+        countries = data;
+        // console.log(countries)
+        countriesContainer.innerHTML="";
+        countries.forEach(renderCountryCard)
     } )
 }
+
 renderAllCountries();
+
+
 const countriesContainer = document.querySelector(".countries-container")
 
 function renderCountryCard(country){
+    // console.log(country)
+    // this country doesn't have the flag!!!
+    if(country.capitals[0]?.name == "Sukhumi") return; 
+
     const countryCard = document.createElement("a");
     countryCard.classList.add("country-card");
     // console.log(country.name);
-    countryCard.href= `./Country.html?name=${country.name.common}`
+    countryCard.href= `./country.html?name=${country.names.common}`
     countryCard.innerHTML = `
-            <img src="${country.flags.png}" alt="${country.name.common} flag">
+            <img src="${country.flag.url_png}" alt="${country.names.common} flag">
             <div class="card-text">
-                <h3 class="card-title">${country.name.common}</h3>
+                <h3 class="card-title">${country.names.common}</h3>
                 <p><b>Population: </b>${country.population.toLocaleString("en-IN")}</p>
                 <p><b>Region: </b>${country.region}</p>
-                <p><b>Capital: </b>${country.capital}</p>
+                <p><b>Capital: </b>${country.capitals[0]?.name || "{no capital}"}</p>
             </div>`
     countriesContainer.append(countryCard);
 }
@@ -51,13 +71,31 @@ const filterByRegion = document.querySelector(".filter-by-region");
 filterByRegion.addEventListener("change" , (e) =>{
     // console.log(e.target.value);
     // console.dir(filterByRegion.value);
-    if(filterByRegion.value == 'all'){
-        renderAllCountries();
+
+    // if(filterByRegion.value == 'all'){
+    //     // renderAllCountries();
+    //     countriesContainer.innerHTML="";
+    //     countries.forEach(renderCountryCard)
+    // }else{
+    //     countriesContainer.innerHTML = ""
+    // fetch(` 'https://api.restcountries.com/countries/v5?region=${filterByRegion.value}&pretty=1',
+    // { headers: { 'Authorization': 'Bearer rc_live_1e1dd4a0fed240078c7af9d5ed5cdf25' } }`)
+    // .then(res => res.json())
+    // .then(countries => {
+    //     countries.forEach(renderCountryCard)
+    //     console.log((countries));
+    // })
+    // }
+
+    let query = filterByRegion.value;
+    let resultingCountries = countries.filter( country => country.region.toLowerCase().includes(filterByRegion.value.toLowerCase()) );
+    countriesContainer.innerText = ""
+    if(resultingCountries.length == 0){
+        countriesContainer.innerHTML = `<p id="no-country-found"><b>(No such country found!)</b></p>`;
+        // console.log('jhvhbghjbghjbhj');
     }
-    countriesContainer.innerHTML = ""
-    fetch(`https://restcountries.com/v3.1/region/${filterByRegion.value}`)
-    .then(res => res.json())
-    .then(countries => countries.forEach(renderCountryCard))
+    resultingCountries.forEach(renderCountryCard);
+    
 })
 
 //searching implementation: method 1
@@ -90,29 +128,31 @@ const inputField = document.querySelector("#input");
 
 inputField.addEventListener("input", ()=>{
     // console.log('input event fired....');
-    let resultingCountries = countries.filter( country => country.name.common.toLowerCase().includes(inputField.value.toLowerCase()));
+    let resultingCountries = countries.filter( country => country.names.common.toLowerCase().includes(inputField.value.toLowerCase()) );
     countriesContainer.innerText = ""
     if(resultingCountries.length == 0){
         countriesContainer.innerHTML = `<p id="no-country-found"><b>(No such country found!)</b></p>`;
-        console.log('jhvhbghjbghjbhj');
+        // console.log('jhvhbghjbghjbhj');
     }
     resultingCountries.forEach(renderCountryCard);
 })
 
 
 //theme toggle
+// light theme is default...I've handled dark theme
 
 const themeToggle = document.querySelector(".header-content p")
 themeToggle.addEventListener("click",() =>{
         document.body.classList.toggle("dark");
         themeMode = themeMode=="dark" ? "light" : "dark";
         if(themeMode == "dark")
-            themeToggle.innerHTML = `<i class="fa-solid fa-sun"></i>&nbsp;&nbsp; Light Mode`
+            themeToggle.innerHTML = `<i class="fa-solid fa-sun"></i>&nbsp;&nbsp; <span>Light Mode</span>`
         else
-            themeToggle.innerHTML = `<i class="fa-regular fa-moon"></i>&nbsp;&nbsp; Dark Mode`
+            themeToggle.innerHTML = `<i class="fa-regular fa-moon"></i>&nbsp;&nbsp;<span> Dark Mode</span>`
             
         localStorage.setItem("theme", themeMode);
 })
+
 // console.log(localStorage.getItem("theme"));
 let themeMode ;
 if(! localStorage.getItem("theme")){
@@ -123,8 +163,29 @@ if(! localStorage.getItem("theme")){
 // debugger; ⭐⭐⭐⭐⭐ // first know to yourself what & how you are doing, what is your line
 if(themeMode == "dark"){
     document.body.classList.add("dark");
-    themeToggle.innerHTML = `<i class="fa-solid fa-sun"></i>&nbsp;&nbsp; Light Mode`
+    themeToggle.innerHTML = `<i class="fa-solid fa-sun"></i>&nbsp;&nbsp; <span>Light Mode</span>`
 }
 
 
+// 
+// shimmer effect
 
+for(let i=0;i<10;i++)
+{
+    renderShimmerCard();
+}
+
+function renderShimmerCard(){
+    const countryCard = document.createElement("a");
+    countryCard.classList.add("shimmer-card");
+    // console.log(country.names);
+    // countryCard.href= `./Country.html?name`
+    countryCard.innerHTML = `
+            <div class="card-text">
+                <h3 class="card-title"></h3>
+                <p></p>
+                <p></p>
+                <p></p>
+            </div>`
+    countriesContainer.append(countryCard);
+}
